@@ -21,7 +21,7 @@ namespace JPEG
             int i, j;
             unsafe
             {
-                byte* imagePointer1 = (byte*)bitmapData1.Scan0;
+                var imagePointer1 = (byte*)bitmapData1.Scan0;
 
                 for (j = 0; j < bitmapData1.Height; j++)
                 {
@@ -40,12 +40,12 @@ namespace JPEG
         public static Bitmap GrayscaleMatrixToBitmap(this double[,] grayscaleMatrix)
         {
             var result = new Bitmap(grayscaleMatrix.GetLength(1), grayscaleMatrix.GetLength(0), PixelFormat.Format24bppRgb);
-            BitmapData bitmapData1 = result.LockBits(new Rectangle(0, 0, result.Width, result.Height), ImageLockMode.ReadOnly, PixelFormat.Format24bppRgb);
+            var bitmapData1 = result.LockBits(new Rectangle(0, 0, result.Width, result.Height), ImageLockMode.ReadOnly, PixelFormat.Format24bppRgb);
 
             int i, j;
             unsafe
             {
-                byte* imagePointer1 = (byte*)bitmapData1.Scan0;
+                var imagePointer1 = (byte*)bitmapData1.Scan0;
                 for (j = 0; j < bitmapData1.Height; j++)
                 {
                     for (i = 0; i < bitmapData1.Width; i++)

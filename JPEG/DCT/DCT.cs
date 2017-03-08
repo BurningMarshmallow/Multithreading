@@ -1,25 +1,25 @@
 ﻿using System;
 
-namespace JPEG
+namespace JPEG.DCT
 {
 	public class DCT
 	{
 		public static double[,] DCT2D(double[,] input)
 		{
-			int height = input.GetLength(0);
-			int width = input.GetLength(1);
-			double[,] coeffs = new double[width, height];
+			var height = input.GetLength(0);
+			var width = input.GetLength(1);
+			var coeffs = new double[width, height];
 
-			for(int u = 0; u < width; u++)
+			for(var u = 0; u < width; u++)
 			{
-				for(int v = 0; v < height; v++)
+				for(var v = 0; v < height; v++)
 				{
-					double sum = 0d;
-					for(int x = 0; x < width; x++)
+					var sum = 0d;
+					for(var x = 0; x < width; x++)
 					{
-						for(int y = 0; y < height; y++)
+						for(var y = 0; y < height; y++)
 						{
-							double a = input[x, y];
+							var a = input[x, y];
 							sum += BasisFunction(a, u, v, x, y, height, width);
 						}
 					}
@@ -31,21 +31,21 @@ namespace JPEG
 
 		public static double[,] IDCT2D(double[,] coeffs)
 		{
-			int height = coeffs.GetLength(0);
-			int width = coeffs.GetLength(1);
-			double[,] output = new double[width, height];
+			var height = coeffs.GetLength(0);
+			var width = coeffs.GetLength(1);
+			var output = new double[width, height];
 
-			for(int x = 0; x < width; x++)
+			for(var x = 0; x < width; x++)
 			{
-				for(int y = 0; y < height; y++)
+				for(var y = 0; y < height; y++)
 				{
-					double sum = 0d;
+					var sum = 0d;
 
-					for(int u = 0; u < width; u++)
+					for(var u = 0; u < width; u++)
 					{
-						for(int v = 0; v < height; v++)
+						for(var v = 0; v < height; v++)
 						{
-							double a = coeffs[u, v];
+							var a = coeffs[u, v];
 							sum += BasisFunction(a, u, v, x, y, height, width) * Alpha(u) * Alpha(v);
 						}
 					}
@@ -57,8 +57,8 @@ namespace JPEG
 
 		public static double BasisFunction(double a, double u, double v, double x, double y, int height, int width)
 		{
-			double b = Math.Cos((2d * x + 1d) * u * Math.PI / (2 * width));
-			double c = Math.Cos((2d * y + 1d) * v * Math.PI / (2 * height));
+			var b = Math.Cos((2d * x + 1d) * u * Math.PI / (2 * width));
+			var c = Math.Cos((2d * y + 1d) * v * Math.PI / (2 * height));
 
 			return a * b * c;
 		}

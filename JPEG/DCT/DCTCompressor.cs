@@ -2,9 +2,9 @@
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace JPEG
+namespace JPEG.DCT
 {
-    public static class DCTHelper
+    public static class DCTCompressor
     {
         public static CompressedImage CompressWithDCT(this double[,] channelPixels, int DCTSize, int compressionLevel = 4)
         {
@@ -15,9 +15,9 @@ namespace JPEG
 
             var result = new List<double>();
 
-            for (int y = 0; y < height; y += DCTSize)
+            for (var y = 0; y < height; y += DCTSize)
             {
-                for (int x = 0; x < width; x += DCTSize)
+                for (var x = 0; x < width; x += DCTSize)
                 {
                     var subMatrix = channelPixels.GetSubMatrix(y, DCTSize, x, DCTSize, DCTSize);
                     subMatrix.ShiftMatrixValues(-128);
@@ -25,9 +25,9 @@ namespace JPEG
                     var channelFreqs = DCT.DCT2D(subMatrix);
 
                     frequencesPerBlock = DCTSize * DCTSize;
-                    for (int i = 0; i < DCTSize; i++)
+                    for (var i = 0; i < DCTSize; i++)
                     {
-                        for (int j = 0; j < DCTSize; j++)
+                        for (var j = 0; j < DCTSize; j++)
                         {
                             if (i + j < compressionLevel)
                             {
@@ -109,62 +109,6 @@ namespace JPEG
                 }
             }
             return localResult;
-        }
-
-        public static double[,] UncompressWithDCT(this CompressedImage image, int DCTSize)
-        {
-            var result = new double[image.Height, image.Width];
-
-            int freqNum = 0;
-            for (int y = 0; y < image.Height; y += DCTSize)
-            {
-                for (int x = 0; x < image.Width; x += DCTSize)
-                {
-                    var channelFreqs = new double[DCTSize, DCTSize];
-                    for (int i = 0; i < DCTSize; i++)
-                    {
-                        for (int j = 0; j < DCTSize; j++)
-                        {
-                            if (i + j < image.CompressionLevel)
-                                channelFreqs[i, j] = image.Frequences[freqNum++];
-                        }
-                    }
-                    var processedSubmatrix = DCT.IDCT2D(channelFreqs);
-                    processedSubmatrix.ShiftMatrixValues(128);
-                    result.SetSubmatrix(processedSubmatrix, y, x);
-                }
-            }
-            return result;
-        }
-
-
-        public static double[,] ParallelUncompressWithDCT(this CompressedImage image, Options options)
-        {
-            var DCTSize = 8;
-            var result = new double[image.Height, image.Width];
-            var blocksCount = image.Width * image.Height / (DCTSize * DCTSize);
-            var freqsCount = Enumerable.Range(1, image.CompressionLevel).Sum();
-            Parallel.For(0, blocksCount, new ParallelOptions { MaxDegreeOfParallelism = options.Threads },
-                blockIndex =>
-            {
-                var y = blockIndex / (image.Width / DCTSize);
-                var x = blockIndex % (image.Width / DCTSize);
-                var channelFreqs = new double[DCTSize, DCTSize];
-                var freqNum = blockIndex * freqsCount;
-
-                for (var i = 0; i < DCTSize; i++)
-                {
-                    for (var j = 0; j < DCTSize; j++)
-                    {
-                        if (i + j < image.CompressionLevel)
-                            channelFreqs[i, j] = image.Frequences[freqNum++];
-                    }
-                }
-                var processedSubmatrix = DCT.IDCT2D(channelFreqs);
-                processedSubmatrix.ShiftMatrixValues(128);
-                result.SetSubmatrix(processedSubmatrix, y * DCTSize, x * DCTSize);
-            });
-            return result;
         }
     }
 }
