@@ -2,7 +2,7 @@
 
 namespace JPEG.DCT
 {
-	public class DCT
+	public class DCTTransformer
 	{
 		public static double[,] DCT2D(double[,] input)
 		{

@@ -23,7 +23,7 @@ namespace JPEG.DCT
                                 channelFreqs[i, j] = image.Frequences[freqNum++];
                         }
                     }
-                    var processedSubmatrix = DCT.IDCT2D(channelFreqs);
+                    var processedSubmatrix = DCTTransformer.IDCT2D(channelFreqs);
                     processedSubmatrix.ShiftMatrixValues(128);
                     result.SetSubmatrix(processedSubmatrix, y, x);
                 }
@@ -54,7 +54,7 @@ namespace JPEG.DCT
                                 channelFreqs[i, j] = image.Frequences[freqNum++];
                         }
                     }
-                    var processedSubmatrix = DCT.IDCT2D(channelFreqs);
+                    var processedSubmatrix = DCTTransformer.IDCT2D(channelFreqs);
                     processedSubmatrix.ShiftMatrixValues(128);
                     result.SetSubmatrix(processedSubmatrix, y * DCTSize, x * DCTSize);
                 });

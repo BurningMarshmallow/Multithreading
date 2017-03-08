@@ -1,7 +1,10 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Imaging;
+using System.IO;
 using CommandLine;
+using JPEG.BitContainers;
 using JPEG.DCT;
 
 namespace JPEG
@@ -20,10 +23,10 @@ namespace JPEG
 				const string fileName = @"..\..\sample.bmp";
 				var compressedFileName = fileName + ".compressed." + DCTSize + "." + compressionLevel;
 				var uncompressedFileName = fileName + ".uncompressed." + DCTSize + "." + compressionLevel + ".bmp";
-//			    var huffmanCompressedFileName = fileName + ".huffman.compressed." + DCTSize + "." + CompressionLevel;
-//			    var huffmanUncompressedFileName = fileName + ".huffman.uncompressed." + DCTSize + "." + CompressionLevel;
+                var huffmanCompressedFileName = fileName + ".huffman.compressed." + DCTSize + "." + compressionLevel;
+                var huffmanUncompressedFileName = fileName + ".huffman.uncompressed." + DCTSize + "." + compressionLevel;
 
-				var bmp = (Bitmap)Image.FromFile(fileName);
+                var bmp = (Bitmap)Image.FromFile(fileName);
 
 				if(bmp.Width % DCTSize != 0 || bmp.Height % DCTSize != 0)
 					throw new Exception($"Image width and height must be multiple of {DCTSize}");
@@ -35,16 +38,16 @@ namespace JPEG
                 compressedImage.Save(compressedFileName);
 			    Console.WriteLine("Compressed");
 
-//                var forHuffman = File.ReadAllBytes(compressedFileName);
-//			    Dictionary<BitsWithLength, byte> decodeTable;
-//			    long bitsCount;
-//                var encodedHuff = HuffmanCodec.Encode(forHuffman, out decodeTable, out bitsCount);
-//			    File.WriteAllBytes(huffmanCompressedFileName, encodedHuff);
-//			    var huffmanCompressed = File.ReadAllBytes(huffmanCompressedFileName);
-//			    var decodedHuff = HuffmanCodec.Decode(huffmanCompressed, decodeTable, bitsCount);
-//			    File.WriteAllBytes(huffmanUncompressedFileName, decodedHuff);
+                var forHuffman = File.ReadAllBytes(compressedFileName);
+                Dictionary<BitsWithLength, byte> decodeTable;
+                long bitsCount;
+                var encodedHuff = HuffmanCodec.Encode(forHuffman, out decodeTable, out bitsCount, options);
+                File.WriteAllBytes(huffmanCompressedFileName, encodedHuff);
+                var huffmanCompressed = File.ReadAllBytes(huffmanCompressedFileName);
+                var decodedHuff = HuffmanCodec.Decode(huffmanCompressed, decodeTable, bitsCount);
+                File.WriteAllBytes(huffmanUncompressedFileName, decodedHuff);
 
-				compressedImage = CompressedImage.Load(compressedFileName, DCTSize);
+                compressedImage = CompressedImage.Load(compressedFileName, DCTSize);
 				var uncompressedImage = compressedImage.ParallelUncompressWithDCT(options);
 
 				var grayscaleBmp = uncompressedImage.GrayscaleMatrixToBitmap();

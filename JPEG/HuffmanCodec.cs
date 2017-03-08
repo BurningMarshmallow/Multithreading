@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
+using JPEG.BitContainers;
 
 namespace JPEG
 {
@@ -10,68 +11,6 @@ namespace JPEG
         public int Frequency { get; set; }
         public HuffmanNode Left { get; set; }
         public HuffmanNode Right { get; set; }
-    }
-
-    internal class BitsWithLength
-    {
-        public int Bits { get; set; }
-        public int BitsCount { get; set; }
-
-        public class Comparer : IEqualityComparer<BitsWithLength>
-        {
-            public bool Equals(BitsWithLength x, BitsWithLength y)
-            {
-                if (x == y) return true;
-                if (x == null || y == null)
-                    return false;
-                return x.BitsCount == y.BitsCount && x.Bits == y.Bits;
-            }
-
-            public int GetHashCode(BitsWithLength obj)
-            {
-                if (obj == null)
-                    return 0;
-                return obj.Bits ^ obj.BitsCount;
-            }
-        }
-    }
-
-    internal class BitsBuffer
-    {
-        private readonly List<byte> buffer = new List<byte>();
-        private readonly BitsWithLength unfinishedBits = new BitsWithLength();
-
-        public void Add(BitsWithLength bitsWithLength)
-        {
-            var bitsCount = bitsWithLength.BitsCount;
-            var bits = bitsWithLength.Bits;
-
-            var neededBits = 8 - unfinishedBits.BitsCount;
-            while (bitsCount >= neededBits)
-            {
-                bitsCount -= neededBits;
-                buffer.Add((byte) ((unfinishedBits.Bits << neededBits) + (bits >> bitsCount)));
-
-                bits = bits & ((1 << bitsCount) - 1);
-
-                unfinishedBits.Bits = 0;
-                unfinishedBits.BitsCount = 0;
-
-                neededBits = 8;
-            }
-            unfinishedBits.BitsCount += bitsCount;
-            unfinishedBits.Bits = (unfinishedBits.Bits << bitsCount) + bits;
-        }
-
-        public byte[] ToArray(out long bitsCount)
-        {
-            bitsCount = buffer.Count*8L + unfinishedBits.BitsCount;
-            var result = new byte[bitsCount/8 + (bitsCount%8 > 0 ? 1 : 0)];
-            buffer.CopyTo(result);
-            if (unfinishedBits.BitsCount > 0)
-                result[buffer.Count] = (byte) (unfinishedBits.Bits << (8 - unfinishedBits.BitsCount));
-            return result;
-        }
     }
 
     internal class HuffmanCodec
@@ -138,22 +77,26 @@ namespace JPEG
             return result;
         }
 
-        private static void FillEncodeTable(HuffmanNode node, BitsWithLength[] encodeSubstitutionTable,
-            int bitvector = 0, int depth = 0)
+        private static void FillEncodeTable(HuffmanNode node, BitsWithLength[] encodeSubstitutionTable, int bitvector = 0, int depth = 0)
         {
-            if (node.LeafLabel != null)
-                encodeSubstitutionTable[node.LeafLabel.Value] = new BitsWithLength {Bits = bitvector, BitsCount = depth};
-            else
+            while (true)
             {
-                if (node.Left != null)
+                if (node.LeafLabel != null)
+                    encodeSubstitutionTable[node.LeafLabel.Value] = new BitsWithLength {Bits = bitvector, BitsCount = depth};
+                else
                 {
-                    ThreadPool.QueueUserWorkItem(state =>
+                    if (node.Left != null)
                     {
+                        ThreadPool.QueueUserWorkItem(state => { FillEncodeTable(node.Left,
+                            encodeSubstitutionTable, (bitvector << 1) + 1, depth + 1); });
                         FillEncodeTable(node.Left, encodeSubstitutionTable, (bitvector << 1) + 1, depth + 1);
-                    });
-                    FillEncodeTable(node.Left, encodeSubstitutionTable, (bitvector << 1) + 1, depth + 1);
-                    FillEncodeTable(node.Right, encodeSubstitutionTable, (bitvector << 1) + 0, depth + 1);
+                        node = node.Right;
+                        bitvector = (bitvector << 1) + 0;
+                        depth = depth + 1;
+                        continue;
+                    }
                 }
+                break;
             }
         }
 

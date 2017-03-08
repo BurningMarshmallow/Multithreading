@@ -1,10 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Drawing;
+﻿using System.Drawing;
 using System.Drawing.Imaging;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace JPEG
 {
@@ -61,7 +56,7 @@ namespace JPEG
                         imagePointer1[2] = (byte)componentValue;
                         imagePointer1 += 3;
                     }
-                    imagePointer1 += (bitmapData1.Stride - (bitmapData1.Width * 3));
+                    imagePointer1 += (bitmapData1.Stride - bitmapData1.Width * 3);
                 }
             }
             result.UnlockBits(bitmapData1);

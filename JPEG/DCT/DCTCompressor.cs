@@ -22,7 +22,7 @@ namespace JPEG.DCT
                     var subMatrix = channelPixels.GetSubMatrix(y, DCTSize, x, DCTSize, DCTSize);
                     subMatrix.ShiftMatrixValues(-128);
 
-                    var channelFreqs = DCT.DCT2D(subMatrix);
+                    var channelFreqs = DCTTransformer.DCT2D(subMatrix);
 
                     frequencesPerBlock = DCTSize * DCTSize;
                     for (var i = 0; i < DCTSize; i++)
@@ -94,7 +94,7 @@ namespace JPEG.DCT
             var subMatrix = channelPixels.GetSubMatrix(y, DCTSize, x, DCTSize, DCTSize);
             subMatrix.ShiftMatrixValues(-128);
             var localResult = new List<double>();
-            var channelFreqs = DCT.DCT2D(subMatrix);
+            var channelFreqs = DCTTransformer.DCT2D(subMatrix);
 
             for (var i = 0; i < DCTSize; i++)
             {
