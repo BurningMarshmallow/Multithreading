@@ -4,104 +4,76 @@ using System.IO;
 
 namespace JPEG
 {
-	public class CompressedImage
-	{
-		public int Width { get; set; }
-		public int Height { get; set; }
+    public class CompressedImage
+    {
+        public int Height { get; set; }
+        public int Width { get; set; }
 
-		public int Quality { get; set; }
+        public int CompressionLevel { get; set; }
+        public int FrequencesPerBlock { get; set; }
 
-		public Dictionary<BitsWithLength, byte> DecodeTable { get; set; }
+        public List<double> Frequences { get; set; }
 
-		public long BitsCount { get; set; }
-		public byte[] CompressedBytes { get; set; }
+        public void Save(string path)
+        {
+            using (var sw = new FileStream(path, FileMode.Create))
+            {
+                var heightBytes = BitConverter.GetBytes(Height);
+                sw.Write(heightBytes, 0, 4);
 
-		public void Save(string path)
-		{
-			using(var sw = new FileStream(path, FileMode.Create))
-			{
-				byte[] buffer;
+                var widthBytes = BitConverter.GetBytes(Width);
+                sw.Write(widthBytes, 0, 4);
 
-				buffer = BitConverter.GetBytes(Width);
-				sw.Write(buffer, 0, buffer.Length);
+                var compressionLevelBytes = BitConverter.GetBytes(CompressionLevel);
+                sw.Write(compressionLevelBytes, 0, 4);
 
-				buffer = BitConverter.GetBytes(Height);
-				sw.Write(buffer, 0, buffer.Length);
+                var frequencesPerBlockBytes = BitConverter.GetBytes(FrequencesPerBlock);
+                sw.Write(frequencesPerBlockBytes, 0, 4);
 
-				buffer = BitConverter.GetBytes(Quality);
-				sw.Write(buffer, 0, buffer.Length);
+                var blockSize = FrequencesPerBlock;
+                for (var blockNum = 0; blockNum*blockSize < Frequences.Count; blockNum++)
+                {
+                    for (var freqNum = 0; freqNum < blockSize; freqNum++)
+                    {
+                        var portion = BitConverter.GetBytes((short) Frequences[blockNum*blockSize + freqNum]);
+                        sw.Write(portion, 0, portion.Length);
+                    }
+                }
+            }
+        }
 
-				buffer = BitConverter.GetBytes(DecodeTable.Count);
-				sw.Write(buffer, 0, buffer.Length);
+        public static CompressedImage Load(string path, int DCTSize)
+        {
+            var result = new CompressedImage();
+            using (var sr = new FileStream(path, FileMode.Open))
+            {
+                var buffer = new byte[4];
 
-				foreach(var kvp in DecodeTable)
-				{
-					var bits = kvp.Key.Bits;
-					buffer = BitConverter.GetBytes(bits);
-					sw.Write(buffer, 0, buffer.Length);
+                sr.Read(buffer, 0, 4);
+                result.Height = BitConverter.ToInt32(buffer, 0);
 
-					var bitsCount = kvp.Key.BitsCount;
-					buffer = BitConverter.GetBytes(bitsCount);
-					sw.Write(buffer, 0, buffer.Length);
+                sr.Read(buffer, 0, 4);
+                result.Width = BitConverter.ToInt32(buffer, 0);
 
-					var mappedByte = kvp.Value;
-					sw.WriteByte(mappedByte);
-				}
+                sr.Read(buffer, 0, 4);
+                result.CompressionLevel = BitConverter.ToInt32(buffer, 0);
 
-				buffer = BitConverter.GetBytes(BitsCount);
-				sw.Write(buffer, 0, buffer.Length);
+                sr.Read(buffer, 0, 4);
+                var blockSize = result.FrequencesPerBlock = BitConverter.ToInt32(buffer, 0);
 
-				buffer = BitConverter.GetBytes(CompressedBytes.Length);
-				sw.Write(buffer, 0, buffer.Length);
+                var blocksCount = result.Height*result.Width/(DCTSize*DCTSize);
+                result.Frequences = new List<double>(blocksCount*result.FrequencesPerBlock);
 
-				sw.Write(CompressedBytes, 0, CompressedBytes.Length);
-			}
-		}
-
-		public static CompressedImage Load(string path)
-		{
-			var result = new CompressedImage();
-			using(var sr = new FileStream(path, FileMode.Open))
-			{
-				var buffer = new byte[8];
-
-				sr.Read(buffer, 0, 4);
-				result.Width = BitConverter.ToInt32(buffer, 0);
-
-				sr.Read(buffer, 0, 4);
-				result.Height = BitConverter.ToInt32(buffer, 0);
-
-				sr.Read(buffer, 0, 4);
-				result.Quality = BitConverter.ToInt32(buffer, 0);
-
-				sr.Read(buffer, 0, 4);
-				var decodeTableSize = BitConverter.ToInt32(buffer, 0);
-				result.DecodeTable = new Dictionary<BitsWithLength, byte>(decodeTableSize, new BitsWithLength.Comparer());
-
-				for(var i = 0; i < decodeTableSize; i++)
-				{
-					sr.Read(buffer, 0, 4);
-					var bits = BitConverter.ToInt32(buffer, 0);
-
-					sr.Read(buffer, 0, 4);
-					var bitsCount = BitConverter.ToInt32(buffer, 0);
-
-					var mappedByte = (byte)sr.ReadByte();
-					result.DecodeTable[new BitsWithLength {Bits = bits, BitsCount = bitsCount}] = mappedByte;
-				}
-
-				sr.Read(buffer, 0, 8);
-				result.BitsCount = BitConverter.ToInt64(buffer, 0);
-
-				sr.Read(buffer, 0, 4);
-				var compressedBytesCount = BitConverter.ToInt32(buffer, 0);
-
-				result.CompressedBytes = new byte[compressedBytesCount];
-				var totalRead = 0;
-				while(totalRead < compressedBytesCount)
-					totalRead += sr.Read(result.CompressedBytes, totalRead, compressedBytesCount - totalRead);
-			}
-			return result;
-		}
-	}
+                for (var blockNum = 0; blockNum < blocksCount; blockNum++)
+                {
+                    for (var freqNum = 0; freqNum < blockSize; freqNum++)
+                    {
+                        sr.Read(buffer, 0, 2);
+                        result.Frequences.Add(BitConverter.ToInt16(buffer, 0));
+                    }
+                }
+            }
+            return result;
+        }
+    }
 }
