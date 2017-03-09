@@ -1,4 +1,4 @@
-﻿namespace JPEG
+﻿namespace JPEG.Extensions
 {
     public static class MatrixExtensions
     {

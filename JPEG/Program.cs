@@ -1,63 +1,54 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Drawing;
-using System.Drawing.Imaging;
+using System.Diagnostics;
 using System.IO;
 using CommandLine;
-using JPEG.BitContainers;
-using JPEG.DCT;
+using JPEG.Transformation;
+
 
 namespace JPEG
 {
-	class Program
-	{
-		public const int DCTSize = 8;
-        
-		static void Main(string[] args)
-		{
-		    var options = new Options();
-            Parser.Default.ParseArguments(args, options);
-            var compressionLevel = 8;
-            try
-			{
-				const string fileName = @"..\..\sample.bmp";
-				var compressedFileName = fileName + ".compressed." + DCTSize + "." + compressionLevel;
-				var uncompressedFileName = fileName + ".uncompressed." + DCTSize + "." + compressionLevel + ".bmp";
-                var huffmanCompressedFileName = fileName + ".huffman.compressed." + DCTSize + "." + compressionLevel;
-                var huffmanUncompressedFileName = fileName + ".huffman.uncompressed." + DCTSize + "." + compressionLevel;
+    public class Program
+    {
+        public static void Main(string[] args)
+        {
+            var options = new Options();
+            var isParsed = Parser.Default.ParseArguments(args, options);
 
-                var bmp = (Bitmap)Image.FromFile(fileName);
+            if (isParsed)
+            {
+                try
+                {
+                    CheckOptions(options);
+                    var sw = Stopwatch.StartNew();
+                    ImageConverter.Compress(options.FileToCompress, options.ThreadsCount, options.Quality);
 
-				if(bmp.Width % DCTSize != 0 || bmp.Height % DCTSize != 0)
-					throw new Exception($"Image width and height must be multiple of {DCTSize}");
-
-				var grayscaleMatrix = bmp.ToGrayscaleMatrix();
-
-                //var compressedImage = grayscaleMatrix.CompressWithDCT(DCTSize, compressionLevel);
-                var compressedImage = grayscaleMatrix.ParallelCompressWithDCT(options);
-                compressedImage.Save(compressedFileName);
-			    Console.WriteLine("Compressed");
-
-                var forHuffman = File.ReadAllBytes(compressedFileName);
-                Dictionary<BitsWithLength, byte> decodeTable;
-                long bitsCount;
-                var encodedHuff = HuffmanCodec.Encode(forHuffman, out decodeTable, out bitsCount, options);
-                File.WriteAllBytes(huffmanCompressedFileName, encodedHuff);
-                var huffmanCompressed = File.ReadAllBytes(huffmanCompressedFileName);
-                var decodedHuff = HuffmanCodec.Decode(huffmanCompressed, decodeTable, bitsCount);
-                File.WriteAllBytes(huffmanUncompressedFileName, decodedHuff);
-
-                compressedImage = CompressedImage.Load(compressedFileName, DCTSize);
-				var uncompressedImage = compressedImage.ParallelUncompressWithDCT(options);
-
-				var grayscaleBmp = uncompressedImage.GrayscaleMatrixToBitmap();
-				grayscaleBmp.Save(uncompressedFileName, ImageFormat.Bmp);
-                Console.WriteLine("Decompressed");
+                    ImageConverter.Decompress(options.FileToDecompress, options.ThreadsCount, options.Quality);
+                    Console.WriteLine(sw.Elapsed.TotalMilliseconds);
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine(e.Message);
+                }
             }
-            catch (Exception e)
-			{
-				Console.WriteLine(e);
-			}
-		}
-	}
+            else
+            {
+                Console.WriteLine(options.GetUsage());
+            }
+        }
+
+
+        private static void CheckOptions(Options options)
+        {
+            if (options.Quality < 1 || options.Quality > 99)
+                throw new ArgumentException("Quality must be in [1,99] interval");
+
+            if (options.ThreadsCount < 1)
+                throw new ArgumentException("Number of threads must be > 0");
+
+            var filesToCheck = new[] { options.FileToCompress, options.FileToDecompress };
+            foreach (var filename in filesToCheck)
+                if (filename != null && !File.Exists(filename))
+                    throw new ArgumentException($"{filename} does not exist");
+        }
+    }
 }

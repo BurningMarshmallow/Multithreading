@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace JPEG
+namespace JPEG.Extensions
 {
-    internal static class IEnumerableExtensions
+    public static class IEnumerableExtensions
     {
         public static T MinOrDefault<T>(this IEnumerable<T> enumerable, Func<T, int> selector)
         {
@@ -22,7 +22,17 @@ namespace JPEG
                 if (firstIsBetter(item, best))
                     best = item;
             }
+            enumerator.Dispose();
             return best;
+        }
+
+        public static void ForEach<T>(
+            this IEnumerable<T> source,
+            Action<T> action)
+        {
+           
+            foreach (T element in source)
+                action(element);
         }
     }
 }

@@ -1,22 +1,26 @@
-using CommandLine;
+﻿using CommandLine;
+using CommandLine.Text;
 
 namespace JPEG
 {
     public class Options
     {
-        [Option('e', "encode", DefaultValue = @"..\..\sample.bmp",
-            HelpText = "Path to bmp file.")]
-        public string PathToBmp { get; set; }
+        [Option('e', HelpText = "Path to bmp file.")]
+        public string FileToCompress { get; set; }
 
-        [Option('t', "threads", DefaultValue = 4,
-            HelpText = "Max parallelism degree.")]
-        public int Threads { get; set; }
-        
-        [Option('q', "quality", DefaultValue = 100,
-            HelpText = "Percentage of final quality")]
+        [Option('t', DefaultValue = 1, HelpText = "Max parallelism degree.")]
+        public int ThreadsCount { get; set; }
+
+        [Option('q', DefaultValue = 50, HelpText = "The quality of compression.")]
         public int Quality { get; set; }
 
-        [Option('d', "decode", HelpText = "Path to encoded image.")]
-        public string PathToEncoded { get; set; }
+        [Option('d', HelpText = "Path to encoded image.")]
+        public string FileToDecompress { get; set; }
+
+        [HelpOption]
+        public string GetUsage()
+        {
+            return HelpText.AutoBuild(this);
+        }
     }
 }

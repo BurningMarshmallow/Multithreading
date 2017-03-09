@@ -65,6 +65,8 @@ namespace JPEG.DCT
             var blocksCount = width * height / (DCTSize * DCTSize);
             var freqsCount = Enumerable.Range(1, compressionLevel).Sum();
             var bufferLength = Enumerable.Range(1, compressionLevel).Sum() * blocksCount;
+            var allQuantizedBytes = new List<byte>(height * width);
+
 
             var frequences = new double[bufferLength];
             Parallel.For(0, blocksCount, new ParallelOptions { MaxDegreeOfParallelism = options.Threads }, i =>
